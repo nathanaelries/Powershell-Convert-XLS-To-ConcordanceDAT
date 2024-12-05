@@ -8,10 +8,10 @@ This PowerShell script converts Excel files to DAT format with specific formatti
 .
 ├── src/
 │   ├── config/
-│   │   └── settings.ps1      # Configuration settings
+│   │   └── settings.psm1     # Configuration settings module
 │   ├── utils/
-│   │   ├── excel-handler.ps1 # Excel operations
-│   │   └── file-converter.ps1# File conversion utilities
+│   │   ├── excel-handler.psm1# Excel operations module
+│   │   └── file-converter.psm1# File conversion utilities module
 │   └── main.ps1             # Main script
 └── README.md
 ```
@@ -58,7 +58,7 @@ Note: Do not include square brackets [] in the command. They indicate optional p
 
 1. Adjust BatchSize based on available RAM
 2. Set MaxThreads to match CPU cores (but not exceed them)
-3. For very large files, increase buffer sizes in settings.ps1
+3. For very large files, increase buffer sizes in settings.psm1
 4. Ensure adequate disk space for temporary files
 
 ## Error Handling

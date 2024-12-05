@@ -1,9 +1,5 @@
 # Main script for Excel to DAT conversion
-using module '.\config\settings.ps1'
-using module '.\utils\excel-handler.ps1'
-using module '.\utils\file-converter.ps1'
-
-# Parameters
+[CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)]
     [ValidateScript({Test-Path $_})]
@@ -21,21 +17,25 @@ param(
     [int]$MaxThreads = 4
 )
 
-# Show usage if no parameters provided
-if ($MyInvocation.BoundParameters.Count -eq 0) {
-    Write-Host "Usage: .\main.ps1 -ExcelFile <path> -OutputFolder <path> [-BatchSize <number>] [-MaxThreads <number>]"
-    Write-Host "Example: .\main.ps1 -ExcelFile 'C:\data\file.xlsx' -OutputFolder 'C:\output' -BatchSize 10000 -MaxThreads 4"
-    exit
-}
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'Continue'
 
-# Update performance settings if provided
+# Import required modules
+$modulePath = $PSScriptRoot
+Import-Module (Join-Path $modulePath "config\settings.psm1") -Force
+Import-Module (Join-Path $modulePath "utils\excel-handler.psm1") -Force
+Import-Module (Join-Path $modulePath "utils\file-converter.psm1") -Force
+Import-Module (Join-Path $modulePath "utils\progress-handler.psm1") -Force
+Import-Module (Join-Path $modulePath "utils\cleanup-handler.psm1") -Force
+
+# Update performance settings
 $CONFIG.BATCH_SIZE = $BatchSize
 $CONFIG.MAX_THREADS = $MaxThreads
 
-# Validate output folder
+# Validate and create output folder if needed
 if (-not (Test-Path $OutputFolder)) {
     try {
-        New-Item -ItemType Directory -Path $OutputFolder -Force -ErrorAction Stop
+        New-Item -ItemType Directory -Path $OutputFolder -Force | Out-Null
         Write-Host "Created output directory: $OutputFolder"
     }
     catch {
@@ -44,29 +44,35 @@ if (-not (Test-Path $OutputFolder)) {
 }
 
 # Initialize
-$FileNameList = [System.Collections.ArrayList]@()
+$FileNameList = [System.Collections.ArrayList]::new()
+$excel = $null
+
 try {
     Write-Host "Initializing Excel..."
     $excel = New-ExcelInstance
+    
     $workbook = Open-ExcelWorkbook -FilePath $ExcelFile -Excel $excel
     $excelFileName = $workbook.Name
     Write-Host "Successfully opened Excel workbook: $excelFileName"
 
-    # Process each worksheet
+    # Process worksheets
     $worksheetCount = $workbook.Worksheets.Count
     Write-Host "Processing $worksheetCount worksheet(s)..."
     
     foreach ($worksheet in $workbook.Worksheets) {
-        Write-Progress -Activity "Processing Worksheets" -Status "Converting $($worksheet.Name)" -PercentComplete (($worksheet.Index / $worksheetCount) * 100)
+        $worksheetName = $worksheet.Name
+        Write-ProcessProgress -Activity "Processing Worksheets" `
+                            -Status "Converting $worksheetName" `
+                            -Current $worksheet.Index `
+                            -Total $worksheetCount
         
-        $tempName = "$excelFileName`_$($worksheet.Name)"
+        $tempName = "{0}_{1}" -f $excelFileName, $worksheetName
         $tempPath = Join-Path $env:TEMP "$tempName.tmp"
         
-        # Save worksheet as temp file
         $worksheet.SaveAs($tempPath, [Microsoft.Office.Interop.Excel.XlFileFormat]::xlUnicodeText)
         Start-Sleep -Milliseconds 100
-        $FileNameList.Add($tempPath)
-        Write-Host "  - Processed worksheet: $($worksheet.Name)"
+        [void]$FileNameList.Add($tempPath)
+        Write-Host "  - Processed worksheet: $worksheetName"
     }
 }
 catch {
@@ -75,7 +81,6 @@ catch {
     exit 1
 }
 finally {
-    # Close Excel
     if ($excel) {
         $excel.Quit()
         Quit-Excel $excel
@@ -83,9 +88,9 @@ finally {
     }
 }
 
-# Process each temp file
-$totalFiles = $FileNameList.Count
+# Process temp files
 $currentFile = 0
+$totalFiles = $FileNameList.Count
 
 foreach ($tempFile in $FileNameList) {
     $currentFile++
@@ -94,43 +99,29 @@ foreach ($tempFile in $FileNameList) {
     $datFile = Join-Path $env:TEMP ($fileName -replace '\.tmp$', '.dat')
     $finalDatFile = Join-Path $OutputFolder ($fileName -replace '\.tmp$', '.dat')
 
-    Write-Progress -Activity "Converting Files" -Status "Processing $fileName" -PercentComplete (($currentFile / $totalFiles) * 100)
-    Write-Host "Converting file $currentFile of $totalFiles: $fileName"
+    Write-ProcessProgress -Activity "Converting Files" `
+                        -Status "Processing $fileName" `
+                        -Current $currentFile `
+                        -Total $totalFiles
+                        
+    Write-Host ("Converting file {0} of {1}: {2}" -f $currentFile, $totalFiles, $fileName)
 
     try {
-        # Convert temp to txt using optimized streaming
         Convert-ExcelToTemp -WorksheetPath $tempFile -OutputPath $txtFile
         Write-Host "  - Completed initial conversion"
 
-        # Convert txt to DAT using parallel processing
         Convert-TempToDAT -InputPath $txtFile -OutputPath $datFile
         Write-Host "  - Completed DAT conversion"
 
-        # Copy to final destination using larger buffer
-        $buffer = New-Object byte[] $CONFIG.BUFFER_SIZE
-        $source = [System.IO.File]::OpenRead($datFile)
-        $dest = [System.IO.File]::Create($finalDatFile)
-        
-        try {
-            while ($true) {
-                $read = $source.Read($buffer, 0, $buffer.Length)
-                if ($read -le 0) { break }
-                $dest.Write($buffer, 0, $read)
-            }
-            Write-Host "  - File saved to output location"
-        }
-        finally {
-            $source.Close()
-            $dest.Close()
-        }
+        Copy-Item -Path $datFile -Destination $finalDatFile -Force
+        Write-Host "  - File saved to output location"
     }
     catch {
-        Write-Error "Error processing file $fileName`: $($_.Exception.Message)"
+        Write-Error ("Error processing file {0}: {1}" -f $fileName, $_.Exception.Message)
         continue
     }
     finally {
-        # Cleanup temp files
-        Remove-Item -Path $tempFile, $txtFile, $datFile -Force -ErrorAction SilentlyContinue
+        Remove-TempFiles -FilePaths @($tempFile, $txtFile, $datFile)
     }
 }
 
