@@ -90,7 +90,8 @@ namespace VenioNSRLTool.Helpers
             }
 
             // Validate file hash if signatures.txt exists
-            ValidateFileHashes(extractPath, dbPath, txtLog);
+            if (!ValidateFileHashes(extractPath, dbPath, txtLog))
+                return;
 
             if (string.IsNullOrEmpty(dbPath)) return;
             txtLog?.AppendText("\ud83d\ude80 Starting import into VenioNSRL...\n");
@@ -198,7 +199,11 @@ namespace VenioNSRLTool.Helpers
             mainLog?.AppendText(txtLog?.Text ?? "");
         }
 
-        private static void ValidateFileHashes(string extractPath, string dbPath, TextBox? txtLog)
+        /// <summary>
+        /// Validates extracted file hashes against signatures.txt.
+        /// Returns true if validation passed or was skipped, false if hash mismatch detected.
+        /// </summary>
+        private static bool ValidateFileHashes(string extractPath, string dbPath, TextBox? txtLog)
         {
             string? signaturesPath = Directory.GetFiles(extractPath, "signatures.txt", SearchOption.AllDirectories).FirstOrDefault();
             if (!string.IsNullOrEmpty(signaturesPath))
@@ -239,7 +244,7 @@ namespace VenioNSRLTool.Helpers
                     else
                     {
                         txtLog?.AppendText("SHA1 validation failed.\n");
-                        return;
+                        return false;
                     }
                 }
                 // Compute MD5 if present
@@ -257,7 +262,7 @@ namespace VenioNSRLTool.Helpers
                     else
                     {
                         txtLog?.AppendText("MD5 validation failed.\n");
-                        return;
+                        return false;
                     }
                 }
                 if (!validated)
@@ -269,6 +274,7 @@ namespace VenioNSRLTool.Helpers
             {
                 txtLog?.AppendText("No signatures.txt found; skipping validation.\n");
             }
+            return true;
         }
     }
 }
