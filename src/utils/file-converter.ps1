@@ -80,7 +80,7 @@ function Process-Batch {
         [System.IO.StreamWriter]$Writer
     )
     
-    $tasks = @()
+    $tasks = [System.Collections.Generic.List[hashtable]]::new()
     $batchArray = $Batch.ToArray()
     $chunkSize = [Math]::Ceiling($batchArray.Count / $CONFIG.MAX_THREADS)
     
@@ -91,18 +91,18 @@ function Process-Batch {
         if ($start -lt $batchArray.Count) {
             $task = [Task]::Run({
                 param($lines, $start, $end)
-                $result = @()
+                $result = [System.Collections.Generic.List[string]]::new($end - $start)
                 for ($j = $start; $j -lt $end; $j++) {
-                    $result += Format-DATLine $lines[$j]
+                    $result.Add((Format-DATLine $lines[$j]))
                 }
                 return $result
             }.GetNewClosure()).AsTask()
             
-            $tasks += @{
+            $tasks.Add(@{
                 Task = $task
                 Start = $start
                 End = $end
-            }
+            })
         }
     }
     
