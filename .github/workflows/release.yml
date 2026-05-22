@@ -45,20 +45,52 @@ jobs:
         if: matrix.archive == 'zip'
         shell: pwsh
         run: |
-          $asset = "xls2dat-${{ github.ref_name }}-${{ matrix.rid }}.zip"
+          $asset = "xls2dat-${{ matrix.rid }}.zip"
           Compress-Archive -Path publish/${{ matrix.rid }}/* -DestinationPath $asset
           "ASSET=$asset" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Package (tar.gz)
         if: matrix.archive == 'tar'
         run: |
-          asset="xls2dat-${{ github.ref_name }}-${{ matrix.rid }}.tar.gz"
+          asset="xls2dat-${{ matrix.rid }}.tar.gz"
           chmod +x publish/${{ matrix.rid }}/xls2dat
           tar -czf "$asset" -C publish/${{ matrix.rid }} .
           echo "ASSET=$asset" >> "$GITHUB_ENV"
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xls2dat-${{ matrix.rid }}
+          path: ${{ env.ASSET }}
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    name: Publish draft release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
       - uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.ASSET }}
+          files: artifacts/*
           draft: true
           generate_release_notes: true
+          append_body: true
+          body: |
+            ## Downloads
+
+            | OS | Architecture | File |
+            | --- | --- | --- |
+            | Windows | x64 | [xls2dat-win-x64.zip](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/xls2dat-win-x64.zip) |
+            | Linux | x64 | [xls2dat-linux-x64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/xls2dat-linux-x64.tar.gz) |
+            | macOS | Apple Silicon | [xls2dat-osx-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/xls2dat-osx-arm64.tar.gz) |
+
+            ### First-launch notes
+
+            - **macOS:** unsigned binary — run `xattr -d com.apple.quarantine ./xls2dat` once to bypass Gatekeeper.
+            - **Windows:** SmartScreen may warn on the unsigned `.exe` — click *More info* → *Run anyway*.
+            - **Linux:** `chmod +x xls2dat` after extracting if your tar tool dropped the executable bit.

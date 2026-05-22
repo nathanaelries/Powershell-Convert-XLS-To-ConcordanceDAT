@@ -14,9 +14,29 @@ Supported inputs:
 
 Output is Concordance DAT — UTF-16 LE with BOM, field delimiter `0x14`, text qualifier `0xFE` (þ), embedded newlines mapped to `0xAE` (®), CRLF line terminators. All of these are configurable.
 
-## Install
+## Download
 
-Requires the .NET 8 SDK to build, or download a self-contained binary from the [Releases](../../releases) page (when published).
+Self-contained binaries — no .NET runtime required. The links below always point at the latest release.
+
+| OS | Architecture | Download |
+| --- | --- | --- |
+| Windows | x64 | [xls2dat-win-x64.zip](https://github.com/nathanaelries/Powershell-Convert-XLS-To-ConcordanceDAT/releases/latest/download/xls2dat-win-x64.zip) |
+| Linux | x64 | [xls2dat-linux-x64.tar.gz](https://github.com/nathanaelries/Powershell-Convert-XLS-To-ConcordanceDAT/releases/latest/download/xls2dat-linux-x64.tar.gz) |
+| macOS | Apple Silicon | [xls2dat-osx-arm64.tar.gz](https://github.com/nathanaelries/Powershell-Convert-XLS-To-ConcordanceDAT/releases/latest/download/xls2dat-osx-arm64.tar.gz) |
+
+See the [Releases page](https://github.com/nathanaelries/Powershell-Convert-XLS-To-ConcordanceDAT/releases) for older versions and checksums.
+
+### First-launch notes
+
+- **macOS:** the binary is unsigned. Run `xattr -d com.apple.quarantine ./xls2dat` once to bypass Gatekeeper.
+- **Windows:** SmartScreen may warn on the unsigned `.exe` — click *More info* → *Run anyway*.
+- **Linux:** `chmod +x xls2dat` after extracting if the executable bit didn't survive your archive tool.
+
+For `.xls`, `.ods`, and `.numbers` inputs, also install [LibreOffice](https://www.libreoffice.org/) and make sure `soffice` is on `PATH` (or set `SOFFICE_PATH`, or pass `--soffice-path`).
+
+## Build from source
+
+Requires the .NET 8 SDK.
 
 ```sh
 git clone https://github.com/nathanaelries/Powershell-Convert-XLS-To-ConcordanceDAT.git
@@ -24,20 +44,13 @@ cd Powershell-Convert-XLS-To-ConcordanceDAT
 dotnet build -c Release
 ```
 
-To publish a single-file binary:
+To produce a single-file binary for a specific platform:
 
 ```sh
-# Windows x64
-dotnet publish src/Xls2Dat.Cli -c Release -r win-x64 --self-contained
-
-# Linux x64
-dotnet publish src/Xls2Dat.Cli -c Release -r linux-x64 --self-contained
-
-# macOS arm64
-dotnet publish src/Xls2Dat.Cli -c Release -r osx-arm64 --self-contained
+dotnet publish src/Xls2Dat.Cli -c Release -r win-x64    --self-contained
+dotnet publish src/Xls2Dat.Cli -c Release -r linux-x64  --self-contained
+dotnet publish src/Xls2Dat.Cli -c Release -r osx-arm64  --self-contained
 ```
-
-For `.xls`, `.ods`, and `.numbers` inputs, install [LibreOffice](https://www.libreoffice.org/) and make sure `soffice` is on `PATH` (or set `SOFFICE_PATH`, or pass `--soffice-path`).
 
 ## Usage
 
