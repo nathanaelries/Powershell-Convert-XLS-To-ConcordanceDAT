@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.rid }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            archive: zip
+          - os: ubuntu-latest
+            rid: linux-x64
+            archive: tar
+          - os: macos-latest
+            rid: osx-arm64
+            archive: tar
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore Xls2Dat.sln
+
+      - name: Test
+        run: dotnet test Xls2Dat.sln -c Release --no-restore --nologo
+
+      - name: Publish
+        run: dotnet publish src/Xls2Dat.Cli -c Release -r ${{ matrix.rid }} --self-contained -o publish/${{ matrix.rid }} /p:DebugType=None /p:DebugSymbols=false
+
+      - name: Package (zip)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          $asset = "xls2dat-${{ github.ref_name }}-${{ matrix.rid }}.zip"
+          Compress-Archive -Path publish/${{ matrix.rid }}/* -DestinationPath $asset
+          "ASSET=$asset" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Package (tar.gz)
+        if: matrix.archive == 'tar'
+        run: |
+          asset="xls2dat-${{ github.ref_name }}-${{ matrix.rid }}.tar.gz"
+          chmod +x publish/${{ matrix.rid }}/xls2dat
+          tar -czf "$asset" -C publish/${{ matrix.rid }} .
+          echo "ASSET=$asset" >> "$GITHUB_ENV"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ASSET }}
+          draft: true
+          generate_release_notes: true
