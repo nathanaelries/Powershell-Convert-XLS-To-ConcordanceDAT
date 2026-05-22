@@ -20,11 +20,11 @@ Self-contained binaries — no .NET runtime required. The links below always poi
 
 | OS | Architecture | Download |
 | --- | --- | --- |
-| Windows | x64 | [xls2dat-win-x64.zip](https://github.com/nathanaelries/Powershell-Convert-XLS-To-ConcordanceDAT/releases/latest/download/xls2dat-win-x64.zip) |
-| Linux | x64 | [xls2dat-linux-x64.tar.gz](https://github.com/nathanaelries/Powershell-Convert-XLS-To-ConcordanceDAT/releases/latest/download/xls2dat-linux-x64.tar.gz) |
-| macOS | Apple Silicon | [xls2dat-osx-arm64.tar.gz](https://github.com/nathanaelries/Powershell-Convert-XLS-To-ConcordanceDAT/releases/latest/download/xls2dat-osx-arm64.tar.gz) |
+| Windows | x64 | [xls2dat-win-x64.zip](../../releases/latest/download/xls2dat-win-x64.zip) |
+| Linux | x64 | [xls2dat-linux-x64.tar.gz](../../releases/latest/download/xls2dat-linux-x64.tar.gz) |
+| macOS | Apple Silicon | [xls2dat-osx-arm64.tar.gz](../../releases/latest/download/xls2dat-osx-arm64.tar.gz) |
 
-See the [Releases page](https://github.com/nathanaelries/Powershell-Convert-XLS-To-ConcordanceDAT/releases) for older versions and checksums.
+See the [Releases page](../../releases) for older versions and checksums.
 
 ### First-launch notes
 
@@ -39,8 +39,8 @@ For `.xls`, `.ods`, and `.numbers` inputs, also install [LibreOffice](https://ww
 Requires the .NET 8 SDK.
 
 ```sh
-git clone https://github.com/nathanaelries/Powershell-Convert-XLS-To-ConcordanceDAT.git
-cd Powershell-Convert-XLS-To-ConcordanceDAT
+git clone https://github.com/nathanaelries/Convert-Spreadsheet2Dat.git
+cd Convert-Spreadsheet2Dat
 dotnet build -c Release
 ```
 
