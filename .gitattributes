@@ -1,0 +1,14 @@
+* text=auto eol=lf
+*.cs text eol=lf
+*.csproj text eol=lf
+*.sln text eol=crlf
+*.md text eol=lf
+*.json text eol=lf
+
+# Binary fixtures
+*.xlsx binary
+*.xlsm binary
+*.xls binary
+*.ods binary
+*.numbers binary
+*.dat binary

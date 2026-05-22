@@ -1,0 +1,24 @@
+# Build output
+bin/
+obj/
+out/
+publish/
+
+# IDE / tooling
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs / temp
+*.log
+*.tmp
+*.dat
+!tests/**/fixtures/**/*.dat
